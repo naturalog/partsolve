@@ -67,9 +67,9 @@ void precalc() { calcFactorials(); calcBn(); for(uint n = 0; n < MAX; n++) mus[n
 
 scalar kappa(const uint m) {
 	if (kappas[m] != 0) return kappas[m];
-	scalar sum = 0, m4 = pow(four, m);
+	scalar sum = 0, m4 = pow(four, m*2);
 	for (uint n = 0; n < N; n++) sum += pow(x[n], 2 * n);
-	kappas[m] = sum * Bn[m] * m4 * (m4 - one);
+	kappas[m] = sum * Bn[m*2] * m4 * (m4 - one);
 	cout<<"kappa["<<m<<"]\t= "<<kappas[m]<<endl;
 	return kappas[m];
 }
@@ -105,7 +105,6 @@ int main(int, char**) {
 #endif
 	precalc();
 
-//	for (uint n = 0; n < MAX; n++) cout<<n<<"!\t= " << facts[n] << endl;
 //	for (uint n = 0; n < MAX; n++) cout<<"B["<<n<<"]\t= " << Bn[n] << endl;
 
 	string str;
