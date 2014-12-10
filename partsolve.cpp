@@ -99,7 +99,7 @@ scalar estimator(const uint n = N) {
 	scalar sum = 0, rem = 1;
 	scalar eps = pow(half, n + 1);
 	uint m = 0;
-	while (fabs(rem) > eps && m < MAX - 1) {
+	while ((fabs(rem) > eps) && (m < MAX - 1)) {
 		sum += (rem = PM1(m/2) * mus[m] / facts[m + 1]);
 		m += 2;
 		cout << "m: " << m << "\trem:\t" << rem << "\tsum:\t" << sum << endl;
