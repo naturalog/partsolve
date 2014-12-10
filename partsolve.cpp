@@ -13,7 +13,7 @@ using namespace mpfr;
 typedef mpreal scalar;
 #endif
 
-const uint MAX = 1024;
+const uint MAX = 128;
 const scalar one = 1;
 const scalar two = 2;
 const scalar half = one / two;
@@ -32,33 +32,59 @@ void calcFactorials() {
 
 inline scalar binom(uint n, uint k) { return facts[n] / (facts[k] * facts[n - k]); }
 
-// http://arxiv.org/pdf/1108.0286v3.pdf
+scalar bn(uint n) {
+	scalar sum = 0;
+	for (uint k = 1; k <= n + 1; k++) {
+		scalar s = 0;
+		for (uint j = 1; j <= k; j++) s += pow(j, n);
+		sum += s * binom(n + 1, k) * PM1(k) / k;
+	}
+	return -sum;
+}
+
+// http://math.ucsb.edu/~jcs/Bernoulli.pdf
 void calcBn() {
+	for (uint n = 0; n < MAX - 1; ++n) Bn[n] = bn(n);
+	return;
 	Bn[0] = 0;
-	Bn[1] = 1;
+	Bn[1] = -half;
 	for (uint n = 2; n < MAX - 1; ++n) {
-		scalar sum = 0;
-		for (uint k = 0; k < n; k++) 
-			sum += binom(n + 1, k) * Bn[k];
-		Bn[n] = -sum / scalar(n + 1);
+		if (n % 2) 
+			Bn[n] = 0; 
+		else {
+			scalar sum = 0;
+			for (uint k = 0; k < n; k++) 
+				sum += binom(n + 1, k) * Bn[k];
+			Bn[n] = -sum / scalar(n + 1);
+		}
 	}
 }
 
-void precalc() { calcFactorials(); calcBn(); }
+scalar mus[MAX];
+scalar kappas[MAX];
+
+void precalc() { calcFactorials(); calcBn(); for(uint n = 0; n < MAX; n++) mus[n] = kappas[n] = 0; }
 
 scalar kappa(const uint m) {
+	if (kappas[m] != 0) return kappas[m];
 	scalar sum = 0, m4 = pow(four, m);
 	for (uint n = 0; n < N; n++) sum += pow(x[n], 2 * n);
-	return sum * Bn[m] * m4 * (m4 - one);
+	kappas[m] = sum * Bn[m] * m4 * (m4 - one);
+	cout<<"kappa["<<m<<"]\t= "<<kappas[m]<<endl;
+	return kappas[m];
 }
 
+
 scalar mu(const uint m) {
+	if (mus[m] != 0) return mus[m];
 	scalar sum = kappa(m);
 
 	for (uint t = 2; t < m - 1; t += 2)
 		sum += binom(m - 1, t - 1) * kappa(t) * mu(m - t);
 
-	return sum;
+	cout<<"mu["<<m<<"]\t= "<<sum<<endl;
+
+	return mus[m] = sum;
 }
 
 scalar estimator(const uint n = N) {
@@ -79,7 +105,8 @@ int main(int, char**) {
 #endif
 	precalc();
 
-	for (uint n = 0; n < MAX; n++) cout<<"B["<<n<<"]\t=" << Bn[n] << endl;
+//	for (uint n = 0; n < MAX; n++) cout<<n<<"!\t= " << facts[n] << endl;
+//	for (uint n = 0; n < MAX; n++) cout<<"B["<<n<<"]\t= " << Bn[n] << endl;
 
 	string str;
 	getline(cin, str);
