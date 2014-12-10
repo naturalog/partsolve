@@ -11,9 +11,11 @@ using namespace std;
 const uint prec = 512;
 using namespace mpfr;
 typedef mpreal scalar;
+#else
+typedef long double scalar;
 #endif
 
-const uint MAX = 128;
+const uint MAX = 256;
 const scalar one = 1;
 const scalar two = 2;
 const scalar half = one / two;
@@ -63,49 +65,53 @@ void calcBn() {
 scalar mus[MAX];
 scalar kappas[MAX];
 
-void precalc() { calcFactorials(); calcBn(); for(uint n = 0; n < MAX; n++) mus[n] = kappas[n] = 0; }
-
-scalar kappa(const uint m) {
-	if (kappas[m] != 0) return kappas[m];
-	scalar sum = 0, m4 = pow(four, m*2);
-	for (uint n = 0; n < N; n++) sum += pow(x[n], 2 * n);
-	kappas[m] = sum * Bn[m*2] * m4 * (m4 - one);
-	cout<<"kappa["<<m<<"]\t= "<<kappas[m]<<endl;
-	return kappas[m];
+void calcKappa() {
+//	if (kappas[m] != 0) return kappas[m];
+	kappas[0] = 1;
+	for (uint m = 1; m < MAX; m++) {
+		if (m % 2) kappas[m] = 0;
+		else {		
+			scalar sum = 0, m4 = pow(four, m*2);
+			for (uint n = 0; n < N; n++) sum += pow(x[n], 2 * n);
+			kappas[m] = sum * Bn[m*2] * m4 * (m4 - one);
+			cout<<"kappa["<<m<<"]\t= "<<kappas[m]<<"\tsum:\t"<<sum<<endl;
+			kappas[m] = sum;
+		}
+	}
 }
 
 
-scalar mu(const uint m) {
-	if (mus[m] != 0) return mus[m];
-	scalar sum = kappa(m);
-
-	for (uint t = 2; t < m - 1; t += 2)
-		sum += binom(m - 1, t - 1) * kappa(t) * mu(m - t);
-
-	cout<<"mu["<<m<<"]\t= "<<sum<<endl;
-
-	return mus[m] = sum;
+void calcMus() {
+//	if (mus[m] != 0) return mus[m];
+	mus[0] = 1;
+	for (uint m = 1; m < MAX; m++) {
+		if (m % 2) mus[m] = 0;
+		else {
+			scalar sum = kappas[m];
+			for (uint t = 1; t < m - 1; ++t) sum += binom(m - 1, t - 1) * kappas[t] * mus[m - t];
+			cout<<"mu["<<m<<"]\t= "<<sum<<endl;
+			mus[m] = sum;
+		}
+	}
 }
 
 scalar estimator(const uint n = N) {
-	scalar sum = 1, rem = 1;
+	scalar sum = 0, rem = 1;
 	scalar eps = pow(half, n + 1);
-	uint m = 2;
-	while (rem > eps) {
-		sum += (rem = PM1(m) * mu(2 * m) / facts[2 * m + 1]);
+	uint m = 0;
+	while (fabs(rem) > eps && m < MAX - 1) {
+		sum += (rem = PM1(m/2) * mus[m] / facts[m + 1]);
 		m += 2;
 		cout << "m: " << m << "\trem:\t" << rem << "\tsum:\t" << sum << endl;
 	}
 	return sum;
 }
 
+void precalc() { calcFactorials(); calcBn(); calcKappa(); calcMus(); }
 int main(int, char**) {
 #ifdef MPREC
 	mpreal::set_default_prec(prec);
 #endif
-	precalc();
-
-//	for (uint n = 0; n < MAX; n++) cout<<"B["<<n<<"]\t= " << Bn[n] << endl;
 
 	string str;
 	getline(cin, str);
@@ -115,20 +121,10 @@ int main(int, char**) {
 		cout << (x[k] = atoi(str.c_str())) << ',';
 	}
 	cout<<endl;
+	precalc();
+	for (uint n = 0; n < MAX; n++) cout<<"B["<<n<<"]\t= " << Bn[n] << endl;
 	scalar e = estimator();
 	cout << endl << "estimator: " << e << endl;
 
-
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
