@@ -2,112 +2,57 @@
 #include <cmath>
 #include <string>
 #include <cstdlib>
+#include <Eigen/Core>
+#include <unsupported/Eigen/MPRealSupport>
 using namespace std;
+using namespace Eigen;
 
-#define MPREC
+//#define MPREC
 
 #ifdef MPREC
 #include <mpreal.h>
-const uint prec = 512;
+const uint prec = 1024; 
 using namespace mpfr;
 typedef mpreal scalar;
 #else
 typedef long double scalar;
 #endif
 
-const uint MAX = 256;
+typedef Matrix<scalar, Dynamic, Dynamic> mat;
 const scalar one = 1;
 const scalar two = 2;
 const scalar half = one / two;
 const scalar four = 4;
-#define PM1(x) ( ( x % 2 ) ? -one : one)
+const scalar h = 1e-15;
 
-scalar Bn[MAX];
-scalar facts[MAX];
 scalar *x;
 uint N;
 
-void calcFactorials() {
-	facts[0] = 1;
-	for (uint n = 1; n < MAX; ++n) facts[n] = n * facts[n - 1];
+scalar psi(const scalar& t/*, uint d = 0*/) {
+//	if (d) return (psi(t+h,d-1)-psi(t-h,d-1))/(h*two);
+	static const scalar pi = acos(-one);
+//	return cos(pi*(one+two)*t);
+	scalar res = 1;
+	for (uint n = 0; n < N; n++) res *= cos(t*x[n]);
+	return res;
 }
 
-inline scalar binom(uint n, uint k) { return facts[n] / (facts[k] * facts[n - k]); }
-
-scalar bn(uint n) {
-	scalar sum = 0;
-	for (uint k = 1; k <= n + 1; k++) {
-		scalar s = 0;
-		for (uint j = 1; j <= k; j++) s += pow(j, n);
-		sum += s * binom(n + 1, k) * PM1(k) / k;
+scalar numint(const scalar w) {
+	static const scalar pi = acos(-one);
+	const scalar dx = one/w;
+	scalar res = 0, c = 0, y, t, x;
+	cout<<w<<' ';
+	for (scalar k = -w; k <= w; ++k) {
+		x = k*pi/w;
+/*		y = psi(x) - c;
+		t = res + y;
+		c = (t - res) - y;
+		res = t;*/
+		res += psi(x);
 	}
-	return -sum;
+	return res * dx * pi;
 }
 
-// http://math.ucsb.edu/~jcs/Bernoulli.pdf
-void calcBn() {
-	for (uint n = 0; n < MAX - 1; ++n) Bn[n] = bn(n);
-	return;
-	Bn[0] = 0;
-	Bn[1] = -half;
-	for (uint n = 2; n < MAX - 1; ++n) {
-		if (n % 2) 
-			Bn[n] = 0; 
-		else {
-			scalar sum = 0;
-			for (uint k = 0; k < n; k++) 
-				sum += binom(n + 1, k) * Bn[k];
-			Bn[n] = -sum / scalar(n + 1);
-		}
-	}
-}
-
-scalar mus[MAX];
-scalar kappas[MAX];
-
-void calcKappa() {
-//	if (kappas[m] != 0) return kappas[m];
-	kappas[0] = 1;
-	for (uint m = 1; m < MAX; m++) {
-		if (m % 2) kappas[m] = 0;
-		else {		
-			scalar sum = 0, m4 = pow(four, m*2);
-			for (uint n = 0; n < N; n++) sum += pow(x[n], 2 * n);
-			kappas[m] = sum * Bn[m*2] * m4 * (m4 - one);
-			cout<<"kappa["<<m<<"]\t= "<<kappas[m]<<"\tsum:\t"<<sum<<endl;
-			kappas[m] = sum;
-		}
-	}
-}
-
-
-void calcMus() {
-//	if (mus[m] != 0) return mus[m];
-	mus[0] = 1;
-	for (uint m = 1; m < MAX; m++) {
-		if (m % 2) mus[m] = 0;
-		else {
-			scalar sum = kappas[m];
-			for (uint t = 1; t < m - 1; ++t) sum += binom(m - 1, t - 1) * kappas[t] * mus[m - t];
-			cout<<"mu["<<m<<"]\t= "<<sum<<endl;
-			mus[m] = sum;
-		}
-	}
-}
-
-scalar estimator(const uint n = N) {
-	scalar sum = 0, rem = 1;
-	scalar eps = pow(half, n + 1);
-	uint m = 0;
-	while ((fabs(rem) > eps) && (m < MAX - 1)) {
-		sum += (rem = PM1(m/2) * mus[m] / facts[m + 1]);
-		m += 2;
-		cout << "m: " << m << "\trem:\t" << rem << "\tsum:\t" << sum << endl;
-	}
-	return sum;
-}
-
-void precalc() { calcFactorials(); calcBn(); calcKappa(); calcMus(); }
 int main(int, char**) {
 #ifdef MPREC
 	mpreal::set_default_prec(prec);
@@ -121,10 +66,13 @@ int main(int, char**) {
 		cout << (x[k] = atoi(str.c_str())) << ',';
 	}
 	cout<<endl;
-	precalc();
-	for (uint n = 0; n < MAX; n++) cout<<"B["<<n<<"]\t= " << Bn[n] << endl;
-	scalar e = estimator();
-	cout << endl << "estimator: " << e << endl;
+	scalar t = 0;
+	uint n = 1;
+	while (n *= 2) cout<<numint(n)<<endl;
+//	precalc();
+//	for (uint n = 0; n < MAX; n++) cout<<"B["<<n<<"]\t= " << Bn[n] << endl;
+//	scalar e = estimator();
+//	cout << endl << "estimator: " << e << endl;
 
 	return 0;
 }
