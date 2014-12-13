@@ -37,18 +37,24 @@ scalar psi(const scalar& t/*, uint d = 0*/) {
 	return res;
 }
 
-scalar numint(const scalar w) {
+scalar* samples = 0;
+uint size = 1e+6;
+
+scalar numint() {
 	static const scalar pi = acos(-one);
-	const scalar dx = one/w;
+	const scalar dx = one/scalar(size);
 	scalar res = 0, c = 0, y, t, x;
-	cout<<w<<' ';
-	for (scalar k = -w; k <= w; ++k) {
-		x = k*pi/w;
+	cout<<size<<' ';
+	if (samples) delete[] samples;
+	samples = new scalar[size + 1];
+	const scalar prsz = pi / scalar(size);
+	for (uint k = 0; k <= size; ++k) {
+		x = scalar(k) * prsz;
 /*		y = psi(x) - c;
 		t = res + y;
 		c = (t - res) - y;
 		res = t;*/
-		res += psi(x);
+		res += (/*samples[k] =*/ psi(x));
 	}
 	return res * dx * pi;
 }
@@ -59,16 +65,16 @@ int main(int, char**) {
 #endif
 
 	string str;
-	getline(cin, str);
+	getline(cin, str, ',');
 	x = new scalar[N = atoi(str.c_str())];
 	for (uint k = 0; k < N; k++) {
-		getline(cin, str);
+		getline(cin, str, ',');
 		cout << (x[k] = atoi(str.c_str())) << ',';
 	}
 	cout<<endl;
 	scalar t = 0;
-	uint n = 1;
-	while (n *= 2) cout<<numint(n)<<endl;
+	size = 1;
+	while (size *= 10) cout<<numint()<<endl;
 //	precalc();
 //	for (uint n = 0; n < MAX; n++) cout<<"B["<<n<<"]\t= " << Bn[n] << endl;
 //	scalar e = estimator();
