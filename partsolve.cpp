@@ -81,21 +81,24 @@ int main(int, char**) {
 	}
 	cout<<endl;
 
-	uint size = 1e+8;
-	double dx = double(1)/double(size - 1);
-	vex::vector<double> X(ctx, size), Y(ctx, size);
-	Y = 1;
-	vex::Reductor<double, vex::SUM> sum(ctx);
+	scalar result = 0;
 
-	X = vex::constants::pi() * vex::element_index() * dx;
-	for (uint k = 0; k < N; k++)
-		if (N - k > 4) {
-			Y *= cos(X * x[k]) * cos(X * x[k + 1]) * cos(X * x[k + 2]);
-			k += 3;
-		} else Y *= cos(X * x[k]);
-	Y *= dx * vex::constants::pi();
+	for (uint iters = 0; iters <= 100; iters++) {
+		double size = 1e+8;
+		double dx = double(1)/double(size - 1);
+		vex::vector<double> X(ctx, size), Y(ctx, size);
+		Y = 1;
+		vex::Reductor<double, vex::SUM> sum(ctx);
 
-	cout<<sum(Y)<<endl;
+		X = vex::constants::pi() * vex::element_index() * dx;
+		for (uint k = 0; k < N; k++)
+			if (N - k > 4) {
+				Y *= cos(X * x[k]) * cos(X * x[k + 1]) * cos(X * x[k + 2]);
+				k += 3;
+			} else Y *= cos(X * x[k]);
+		Y *= dx * vex::constants::pi();
+		cout<<(result += sum(Y))<<endl;
+	}
 	
 //	scalar t = 0;
 //	size = 1;
