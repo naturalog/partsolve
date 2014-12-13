@@ -64,10 +64,11 @@ scalar numint() {
 	return res * dx * pi;
 }
 */
-int main(int, char**) {
+int main(int argc, char** argv) {
 #ifdef MPREC
 	mpreal::set_default_prec(prec);
 #endif
+	if (argc != 2) { cout<<"usage: <iters>"<<endl; return 1; }
 	vex::Context ctx( vex::Filter::Type(CL_DEVICE_TYPE_GPU) && vex::Filter::DoublePrecision );
 	cout << ctx << endl;
 
@@ -82,23 +83,24 @@ int main(int, char**) {
 	cout<<endl;
 
 	scalar result = 0;
-
-	for (uint iters = 0; iters <= 100; iters++) {
-		double size = 1e+8;
+	uint max_iters = 10;
+//	for (uint iters = 0; iters <= max_iters; iters++) {
+		double size = atoi(argv[1]);
+		cout<<"iters: "<<size<<endl;
 		double dx = double(1)/double(size - 1);
 		vex::vector<double> X(ctx, size), Y(ctx, size);
 		Y = 1;
 		vex::Reductor<double, vex::SUM> sum(ctx);
 
-		X = vex::constants::pi() * vex::element_index() * dx;
+		X = vex::constants::pi() * vex::element_index() * dx;// + double(iters)/double(max_iters-1);
 		for (uint k = 0; k < N; k++)
 			if (N - k > 4) {
 				Y *= cos(X * x[k]) * cos(X * x[k + 1]) * cos(X * x[k + 2]);
 				k += 3;
 			} else Y *= cos(X * x[k]);
-		Y *= dx * vex::constants::pi();
+		Y *= vex::constants::pi() * dx;// / double(max_iters-1);
 		cout<<(result += sum(Y))<<endl;
-	}
+//	}
 	
 //	scalar t = 0;
 //	size = 1;
