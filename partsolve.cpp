@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
 #ifdef MPREC
 	mpreal::set_default_prec(prec);
 #endif
-	if (argc != 2) { cout<<"usage: <iters>"<<endl; return 1; }
+	if (argc != 3) { cout<<"usage: <iters per batch> <batches>"<<endl; return 1; }
 	vex::Context ctx( vex::Filter::Type(CL_DEVICE_TYPE_GPU) && vex::Filter::DoublePrecision );
 	cout << ctx << endl;
 
@@ -83,15 +83,15 @@ int main(int argc, char** argv) {
 	cout<<endl;
 
 	scalar result = 0;
-	uint max_iters = 10;
+	uint max_iters = atoi(argv[2]);
 	double size = atoi(argv[1]);
 	cout<<"iters: "<<size<<endl;
-	for (uint iters = 0; iters <= max_iters; iters++) {
-		double dx = double(1)/(double(size-1) * max_iters);
-		vex::vector<double> X(ctx, size), Y(ctx, size);
-		Y = 1;
-		vex::Reductor<double, vex::SUM> sum(ctx);
+	vex::vector<double> X(ctx, size), Y(ctx, size);
+	vex::Reductor<double, vex::SUM> sum(ctx);
 
+	double dx = double(1)/(double(size-1) * max_iters);
+	for (uint iters = 0; iters <= max_iters; iters++) {
+		Y = 1;
 		X = (vex::constants::pi() * (vex::element_index() + double(iters)*size)) * dx;
 		for (uint k = 0; k < N; k++)
 			if (N - k > 4) {
@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
 				k += 3;
 			} else Y *= cos(X * x[k]);
 		Y *= vex::constants::pi() * dx;
-		cout<<iters<<' '<<(result += sum(Y))<<endl;
+		cout<<iters<<'/'<<max_iters<<":\t"<<(result += sum(Y))<<endl;
 	}
 	
 //	scalar t = 0;
