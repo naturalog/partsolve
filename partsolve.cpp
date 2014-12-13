@@ -84,23 +84,23 @@ int main(int argc, char** argv) {
 
 	scalar result = 0;
 	uint max_iters = 10;
-//	for (uint iters = 0; iters <= max_iters; iters++) {
-		double size = atoi(argv[1]);
-		cout<<"iters: "<<size<<endl;
-		double dx = double(1)/double(size - 1);
+	double size = atoi(argv[1]);
+	cout<<"iters: "<<size<<endl;
+	for (uint iters = 0; iters <= max_iters; iters++) {
+		double dx = double(1)/(double(size-1) * max_iters);
 		vex::vector<double> X(ctx, size), Y(ctx, size);
 		Y = 1;
 		vex::Reductor<double, vex::SUM> sum(ctx);
 
-		X = vex::constants::pi() * vex::element_index() * dx;// + double(iters)/double(max_iters-1);
+		X = (vex::constants::pi() * (vex::element_index() + double(iters)*size)) * dx;
 		for (uint k = 0; k < N; k++)
 			if (N - k > 4) {
 				Y *= cos(X * x[k]) * cos(X * x[k + 1]) * cos(X * x[k + 2]);
 				k += 3;
 			} else Y *= cos(X * x[k]);
-		Y *= vex::constants::pi() * dx;// / double(max_iters-1);
-		cout<<(result += sum(Y))<<endl;
-//	}
+		Y *= vex::constants::pi() * dx;
+		cout<<iters<<' '<<(result += sum(Y))<<endl;
+	}
 	
 //	scalar t = 0;
 //	size = 1;
